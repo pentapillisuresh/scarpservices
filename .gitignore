@@ -1,0 +1,65 @@
+# ======================
+# Node & Package files
+# ======================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ======================
+# Environment variables
+# ======================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# ======================
+# Build outputs
+# ======================
+dist/
+build/
+out/
+.next/
+coverage/
+
+# ======================
+# React Native / Expo
+# ======================
+.expo/
+.expo-shared/
+android/.gradle/
+android/app/build/
+android/build/
+ios/Pods/
+ios/build/
+*.jks
+*.keystore
+
+# ======================
+# Logs
+# ======================
+logs/
+*.log
+
+# ======================
+# OS files
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Editor files
+# ======================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ======================
+# Misc
+# ======================
+.cache/
+.temp/
