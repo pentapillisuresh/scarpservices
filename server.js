@@ -54,7 +54,7 @@ app.use(`${BASE}/auth`, authRoutes);
 app.use(`${BASE}/scrap`, scrapRoutes);
 app.use(`${BASE}/user`, userRoutes);
 app.use(`${BASE}/admin`, adminRoutes);
-app.use(`${BASE}/user/addresses`, userAddressRoutes);
+app.use(`${BASE}/userAddresses`, userAddressRoutes);
 app.use(`${BASE}/categories`, categoryRoutes);
 app.use(`${BASE}/notifications`, notificationRoutes);
 

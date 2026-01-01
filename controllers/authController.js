@@ -328,7 +328,7 @@ class AuthController {
         });
       }
       
-      const { email, phone, password, full_name } = req.body;
+      const { email, phone, password, full_name,role } = req.body;
       
       // Clean phone number
       const cleanPhone = phone.replace(/\D/g, '');
@@ -360,6 +360,7 @@ class AuthController {
         phone: cleanPhone,
         password_hash: password,
         full_name,
+        role:role? role:"user",
         is_verified: false,
         is_active: true
       });

@@ -10,7 +10,7 @@ const CollectionRequest = sequelize.define('CollectionRequest', {
   request_number: {
     type: DataTypes.STRING(20),
     // unique: true,
-    allowNull: false
+    allowNull: true
   },
   user_id: {
     type: DataTypes.INTEGER,
@@ -19,6 +19,9 @@ const CollectionRequest = sequelize.define('CollectionRequest', {
       model: 'users',
       key: 'id'
     }
+  },
+  total_estimated_value: {              // ✅ RESTORED
+    type: DataTypes.DECIMAL(10, 2)
   },
   address_id: {
     type: DataTypes.INTEGER,

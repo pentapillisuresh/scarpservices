@@ -7,6 +7,7 @@ const {
   } = require('../models');
   const { processImage } = require('../middlewares/upload');
   const { Op } = require('sequelize');
+const sequelize = require('../config/database');
   
   class ScrapController {
     // Get all categories
@@ -32,44 +33,45 @@ const {
   
     // Create scrap collection request
     static async createRequest(req, res) {
+      const transaction = await sequelize.transaction();
+    
       try {
         const userId = req.user.id;
-        const { 
-          address_id, 
-          items, 
-          pickup_date, 
-          pickup_time_slot, 
-          notes 
+        const {
+          address_id,
+          items,
+          pickup_date,
+          pickup_time_slot,
+          notes
         } = req.body;
-        
-        // Validate address belongs to user
+    
+        // 1️⃣ Validate address
         const address = await UserAddress.findOne({
-          where: { id: address_id, user_id: userId }
+          where: { id: address_id}
         });
-        
         if (!address) {
           return res.status(400).json({
             success: false,
             message: 'Invalid address'
           });
         }
-        
-        // Parse items if it's a string
-        const scrapItems = typeof items === 'string' ? JSON.parse(items) : items;
-        
-        // Validate items
+    
+        // 2️⃣ Parse items
+        const scrapItems = typeof items === 'string'
+          ? JSON.parse(items)
+          : items;
+    
         if (!Array.isArray(scrapItems) || scrapItems.length === 0) {
           return res.status(400).json({
             success: false,
             message: 'At least one scrap item is required'
           });
         }
-        
-        // Calculate totals
+    
+        // 3️⃣ Calculate totals
         let totalWeight = 0;
         let totalValue = 0;
-        
-        // Validate categories
+    
         for (const item of scrapItems) {
           const category = await Category.findByPk(item.category_id);
           if (!category) {
@@ -78,12 +80,12 @@ const {
               message: `Invalid category id: ${item.category_id}`
             });
           }
-          
-          totalWeight += parseFloat(item.weight || 0);
-          totalValue += parseFloat(item.estimated_value || 0);
+    
+          totalWeight += Number(item.weight || 0);
+          totalValue += Number(item.estimated_value || 0);
         }
-        
-        // Create collection request
+    
+        // 4️⃣ Create request
         const request = await CollectionRequest.create({
           user_id: userId,
           address_id,
@@ -91,72 +93,77 @@ const {
           total_estimated_value: totalValue,
           pickup_date,
           pickup_time_slot,
-          notes,
-          status: 'pending'
-        });
-        
-        // Create request items
+          notes
+        }, { transaction });
+    
+        // 5️⃣ Create items
         const requestItems = [];
         for (const item of scrapItems) {
-          const requestItem = await RequestItem.create({
+          const createdItem = await RequestItem.create({
             request_id: request.id,
             category_id: item.category_id,
             quantity: item.quantity || 1,
             weight: item.weight,
             estimated_value: item.estimated_value,
             description: item.description
-          });
-          
-          requestItems.push(requestItem);
+          }, { transaction });
+    
+          requestItems.push(createdItem);
         }
-        
-        // Handle image uploads
-        if (req.files && req.files.length > 0) {
+    
+        // 6️⃣ Handle images
+        if (req.files?.length) {
+          const imageIndexes = Array.isArray(req.body.image_item_index)
+            ? req.body.image_item_index.map(Number)
+            : [];
+    
           for (let i = 0; i < req.files.length; i++) {
             const file = req.files[i];
-            const itemIndex = req.body.image_item_index ? req.body.image_item_index[i] : 0;
-            
-            if (itemIndex >= 0 && itemIndex < requestItems.length) {
-              const processedImage = await processImage(file);
-              
-              await RequestImage.create({
-                request_item_id: requestItems[itemIndex].id,
-                image_url: processedImage.url,
-                image_type: 'scrap',
-                is_primary: i === 0 // First image is primary
-              });
-            }
+            const itemIndex = imageIndexes[i] ?? 0;
+    
+            if (!requestItems[itemIndex]) continue;
+    
+            const processedImage = await processImage(file);
+    
+            await RequestImage.create({
+              request_item_id: requestItems[itemIndex].id,
+              image_url: processedImage.url,
+              image_type: 'scrap',
+              is_primary: i === 0
+            }, { transaction });
           }
         }
-        
-        // Get full request details
+    
+        await transaction.commit();
+    
+        // 7️⃣ Fetch full request
         const fullRequest = await CollectionRequest.findByPk(request.id, {
           include: [
             {
               model: RequestItem,
-              include: [
-                { model: Category },
-                { model: RequestImage }
-              ]
+              include: [Category, RequestImage]
             },
-            { model: UserAddress }
+            UserAddress
           ]
         });
-        
-        res.status(201).json({
+    
+        return res.status(201).json({
           success: true,
           message: 'Scrap collection request created successfully',
           data: fullRequest
         });
+    
       } catch (error) {
+        await transaction.rollback();
         console.error('Create request error:', error);
-        res.status(500).json({
+    
+        return res.status(500).json({
           success: false,
           message: 'Server error'
         });
       }
     }
-  
+      
     // Get user's scrap requests
     static async getUserRequests(req, res) {
       try {

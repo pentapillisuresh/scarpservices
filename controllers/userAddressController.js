@@ -5,7 +5,7 @@ class UserAddressController {
   // Create new address
   static async createAddress(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.body.user_id;
       const {
         address_line1,
         address_line2,
@@ -59,7 +59,6 @@ class UserAddressController {
   static async getUserAddresses(req, res) {
     try {
       const userId = req.user.id;
-      
       const addresses = await UserAddress.findAll({
         where: { user_id: userId },
         order: [
