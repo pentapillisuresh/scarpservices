@@ -42,7 +42,7 @@ const validateOTP = [
 ];
 
 // Public routes
-router.post('/register', AuthController.register);
+router.post('/register', AuthController.registerOrLogin);
 router.post('/verify-registration', validateOTP, AuthController.verifyRegistrationOTP);
 router.post('/login', validateLogin, AuthController.login);
 router.post('/login/phone', validatePhoneLogin, AuthController.loginWithPhone);

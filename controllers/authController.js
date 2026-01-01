@@ -318,23 +318,22 @@ const { Op } = require('sequelize');
 
 class AuthController {
   // User registration with OTP
-  static async register(req, res) {
+  static async registerOrLogin(req, res) {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          success: false, 
-          errors: errors.array() 
+        return res.status(400).json({
+          success: false,
+          errors: errors.array()
         });
       }
-      
-      const { email, phone, password, full_name,role } = req.body;
-      
-      // Clean phone number
+  
+      const { email, phone, password, full_name, role } = req.body;
+  
       const cleanPhone = phone.replace(/\D/g, '');
-      
-      // Check if user already exists
-      const existingUser = await User.findOne({
+  
+      // Find user
+      let user = await User.findOne({
         where: {
           [Op.or]: [
             { email },
@@ -342,79 +341,73 @@ class AuthController {
           ]
         }
       });
-      
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User with this email or phone already exists'
+  
+      // If user exists → LOGIN
+      if (user) {
+        // If using bcrypt (recommended)
+        // const isMatch = await bcrypt.compare(password, user.password_hash);
+        // if (!isMatch) {
+        //   return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        // }
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid credentials'
+          });
+        }
+  
+        const token = generateToken(user.id, user.role);
+  
+        return res.json({
+          success: true,
+          message: 'Login successful',
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            full_name: user.full_name,
+            role: user.role
+          }
         });
       }
-      
-      // Hash password
-      // const salt = await bcrypt.genSalt(10);
-      // const hashedPassword = await bcrypt.hash(password, salt);
-      
-      // Create user with temporary status
-      const user = await User.create({
+  
+      // If user does NOT exist → REGISTER
+      user = await User.create({
         email,
         phone: cleanPhone,
-        password_hash: password,
+        password_hash: password, // ⚠️ hash this in production
         full_name,
-        role:role? role:"user",
-        is_verified: false,
+        role: role || 'user',
+        is_verified: true,
         is_active: true
       });
-      
-      // Generate and simulate OTP
-      const otpResult = await SimulatedOTP.generateOTP(cleanPhone);
-      
-      if (!otpResult.success) {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to generate OTP'
-        });
-      }
-      
-      res.status(201).json({
+  
+      const token = generateToken(user.id, user.role);
+  
+      return res.status(201).json({
         success: true,
-        message: 'Registration successful. Please verify OTP.',
-        data: {
+        message: 'Registration successful',
+        token,
+        user: {
           id: user.id,
           email: user.email,
           phone: user.phone,
           full_name: user.full_name,
-          otp_required: true
-        },
-        otp_info: {
-          message: 'OTP generated successfully',
-          otp: otpResult.otp, // Include OTP in development
-          expires_at: otpResult.expires_at
+          role: user.role
         }
       });
+  
     } catch (error) {
-      console.error('Registration error:', error);
-      
-      if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({
-          success: false,
-          message: error.errors.map(e => e.message).join(', ')
-        });
-      }
-      
-      if (error.name === 'SequelizeUniqueConstraintError') {
-        return res.status(400).json({
-          success: false,
-          message: 'User with this email or phone already exists'
-        });
-      }
-      
+      console.error('Register/Login error:', error);
       res.status(500).json({
         success: false,
-        message: 'Server error during registration'
+        message: 'Server error'
       });
     }
   }
-
+  
   // Verify OTP for registration
   static async verifyRegistrationOTP(req, res) {
     try {
