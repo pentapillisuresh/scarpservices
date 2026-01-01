@@ -179,7 +179,7 @@ class CategoryController {
       const categoriesWithFullUrls = categories.map(category => {
         const categoryData = category.toJSON();
         if (categoryData.icon && !categoryData.icon.startsWith('http')) {
-          categoryData.icon = `${baseUrl}/uploads/category-icons/${categoryData.icon}`;
+          categoryData.icon = `${baseUrl}/uploads/${categoryData.icon}`;
         }
         return categoryData;
       });
