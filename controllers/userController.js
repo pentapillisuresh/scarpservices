@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, CollectionRequest, RequestItem, Category, RequestImage, UserAddress } = require('../models');
 const { processUploadedFile } = require('../middlewares/upload');
 const fs = require('fs');
 const path = require('path');
@@ -97,6 +97,33 @@ class UserController {
       });
     }
   }
-}
+
+  static async getAllUsers(req, res) {
+    try {
+      const userData = await User.findAll({
+        attributes: {
+          exclude: ['password_hash', 'otp', 'otp_expiry', 'verification_token']
+        },
+        include: [
+          {
+            model: CollectionRequest,
+            required: true // INNER JOIN (only users with collection requests)
+          }
+        ]
+      });
+  
+      res.status(200).json({
+        success: true,
+        data: userData
+      });
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error'
+      });
+    }
+  }
+  }
 
 module.exports = UserController;

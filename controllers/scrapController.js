@@ -211,6 +211,49 @@ const sequelize = require('../config/database');
         });
       }
     }
+
+    static async getAllRequests(req, res) {
+      try {
+        const {  page = 1, limit = 10 } = req.query;
+        
+        
+        const offset = (page - 1) * limit;
+        
+        const requests = await CollectionRequest.findAndCountAll({
+          include: [
+            {
+              model: RequestItem,
+              include: [
+                { model: Category },
+                { model: RequestImage }
+              ]
+            },
+            { model: UserAddress }
+          ],
+          order: [['created_at', 'DESC']],
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        });
+        
+        res.json({
+          success: true,
+          data: {
+            requests: requests.rows,
+            pagination: {
+              total: requests.count,
+              page: parseInt(page),
+              totalPages: Math.ceil(requests.count / limit)
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Get user requests error:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Server error'
+        });
+      }
+    }
   
     // Get single request details
     static async getRequestDetails(req, res) {
