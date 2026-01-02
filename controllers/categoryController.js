@@ -167,35 +167,45 @@ class CategoryController {
   }
 
   // Get all categories with icon URLs
-  static async getAllCategories(req, res) {
-    try {
-      const categories = await Category.findAll({
-        where: { is_active: true },
-        attributes: ['id', 'name', 'description', 'icon', 'created_at']
-      });
-      
-      // Convert relative paths to absolute URLs
-      const baseUrl = `${req.protocol}:/${req.get('host')}`;
-      const categoriesWithFullUrls = categories.map(category => {
-        const categoryData = category.toJSON();
-        if (categoryData.icon && !categoryData.icon.startsWith('http')) {
-          categoryData.icon = `${baseUrl}/${categoryData.icon}`;
-        }
-        return categoryData;
-      });
-      
-      res.json({
-        success: true,
-        data: categoriesWithFullUrls
-      });
-    } catch (error) {
-      console.error('Get categories error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Server error'
-      });
-    }
+  // In CategoryController.js, update the getAllCategories method:
+
+// Get all categories with icon URLs
+static async getAllCategories(req, res) {
+  try {
+    const categories = await Category.findAll({
+      where: { is_active: true },
+      attributes: ['id', 'name', 'description', 'icon', 'created_at']
+    });
+    
+    // Convert relative paths to absolute URLs
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const categoriesWithFullUrls = categories.map(category => {
+      const categoryData = category.toJSON();
+      if (categoryData.icon) {
+        // Remove any leading slashes from the icon path
+        let iconPath = categoryData.icon.replace(/^\/+/, '');
+        
+        // Ensure the icon path doesn't start with uploads/uploads
+        iconPath = iconPath.replace(/^uploads\/\/?uploads\//, 'uploads/');
+        
+        // Construct the full URL without double slashes
+        categoryData.icon = `${baseUrl}/${iconPath}`;
+      }
+      return categoryData;
+    });
+    
+    res.json({
+      success: true,
+      data: categoriesWithFullUrls
+    });
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
+}
 }
 
 module.exports = CategoryController;
