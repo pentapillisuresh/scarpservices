@@ -175,7 +175,7 @@ class CategoryController {
       });
       
       // Convert relative paths to absolute URLs
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = `${req.protocol}:/${req.get('host')}`;
       const categoriesWithFullUrls = categories.map(category => {
         const categoryData = category.toJSON();
         if (categoryData.icon && !categoryData.icon.startsWith('http')) {
