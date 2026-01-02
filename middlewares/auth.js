@@ -29,7 +29,6 @@ const protect = async (req, res, next) => {
     console.log("decoded:::",decoded.id)
 
     const user = await User.findByPk(decoded.id);
-    console.log("user:::",user)
     if (!user) {
       return res.status(401).json({
         success: false,

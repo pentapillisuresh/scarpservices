@@ -300,7 +300,7 @@ const sequelize = require('../config/database');
       try {
         const userId = req.user.id;
         const { id } = req.params;
-        
+        console.log("userID:::",userId)
         const request = await CollectionRequest.findOne({
           where: { id, user_id: userId }
         });
