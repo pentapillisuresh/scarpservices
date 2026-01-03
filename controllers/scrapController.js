@@ -3,7 +3,8 @@ const {
     UserAddress,
     CollectionRequest,
     RequestItem,
-    RequestImage
+    RequestImage,
+    User
   } = require('../models');
   const { processImage } = require('../middlewares/upload');
   const { Op } = require('sequelize');
@@ -214,13 +215,15 @@ const sequelize = require('../config/database');
 
     static async getAllRequests(req, res) {
       try {
-        const {  page = 1, limit = 10 } = req.query;
-        
-        
+        const { page = 1, limit = 10 } = req.query;
+    
         const offset = (page - 1) * limit;
-        
+    
         const requests = await CollectionRequest.findAndCountAll({
           include: [
+            {
+              model: User,
+            },
             {
               model: RequestItem,
               include: [
@@ -228,13 +231,15 @@ const sequelize = require('../config/database');
                 { model: RequestImage }
               ]
             },
-            { model: UserAddress }
+            {
+              model: UserAddress
+            }
           ],
           order: [['created_at', 'DESC']],
           limit: parseInt(limit),
           offset: parseInt(offset)
         });
-        
+    
         res.json({
           success: true,
           data: {
@@ -254,7 +259,7 @@ const sequelize = require('../config/database');
         });
       }
     }
-  
+      
     // Get single request details
     static async getRequestDetails(req, res) {
       try {
