@@ -35,7 +35,7 @@ const sequelize = require('../config/database');
     // Create scrap collection request
     static async createRequest(req, res) {
       const transaction = await sequelize.transaction();
-    
+    console.log("rrr:::",req.body)
       try {
         const userId = req.user.id;
         const {
