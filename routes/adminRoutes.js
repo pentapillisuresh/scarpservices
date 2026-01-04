@@ -11,7 +11,7 @@ router.use(authorize('admin'));
 router.get('/dashboard/stats', AdminController.getDashboardStats);
 
 // Requests management
-router.get('/requests/pending', AdminController.getPendingRequests);
+// router.get('/requests/pending', AdminController.getPendingRequests);
 router.get('/requests', AdminController.getAllRequests);
 router.put('/requests/:id/accept', AdminController.acceptRequest);
 router.put('/requests/:id/reject', AdminController.rejectRequest);

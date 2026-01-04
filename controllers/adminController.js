@@ -300,78 +300,110 @@ const {
     }
   
     // Get dashboard statistics
-    static async getDashboardStats(req, res) {
-      try {
-        const adminId = req.user.id;
-        
-        // Get counts by status
-        const counts = await CollectionRequest.findAll({
-          attributes: [
-            'status',
-            [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']
-          ],
-          group: ['status']
-        });
-        // Get today's requests
-        const todayStart = moment().startOf('day').toDate();
-        const todayEnd = moment().endOf('day').toDate();
-        
-        const todayRequests = await CollectionRequest.count({
-          where: {
-            created_at: {
-              [Op.between]: [todayStart, todayEnd]
-            }
-          }
-        });
-        
-        // Get weekly statistics
-        const weekStart = moment().startOf('week').toDate();
-        const weeklyStats = await CollectionRequest.findAll({
-          attributes: [
-            [Sequelize.fn('DATE', Sequelize.col('created_at')), 'date'],
-            [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']
-          ],
-          where: {
-            created_at: {
-              [Op.gte]: weekStart
-            }
-          },
-          group: [Sequelize.fn('DATE', Sequelize.col('created_at'))],
-          order: [[Sequelize.fn('DATE', Sequelize.col('created_at')), 'ASC']]
-        });
-        
-        // Get top categories
-        const topCategories = await RequestItem.findAll({
-          attributes: [
-            'category_id',
-            [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']
-          ],
-          include: [{
-            model: Category,
-            attributes: ['name']
-          }],
-          group: ['category_id'],
-          order: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'DESC']],
-          limit: 5
-        });
-        
-        res.json({
-          success: true,
-          data: {
-            status_counts: counts,
-            today_requests: todayRequests,
-            weekly_stats: weeklyStats,
-            top_categories: topCategories
-          }
-        });
-      } catch (error) {
-        console.error('Get dashboard stats error:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Server error'
-        });
+    // Get dashboard statistics
+static async getDashboardStats(req, res) {
+  try {
+    const adminId = req.user.id;
+    
+    console.log('Getting dashboard stats for admin:', adminId);
+    
+    // Get counts by status
+    const counts = await CollectionRequest.findAll({
+      attributes: [
+        'status',
+        [Sequelize.fn('COUNT', Sequelize.col('CollectionRequest.id')), 'count']
+      ],
+      group: ['status']
+    }).catch(err => {
+      console.error('Error getting status counts:', err);
+      throw err;
+    });
+    
+    console.log('Status counts:', JSON.stringify(counts, null, 2));
+    
+    // Get today's requests
+    const todayStart = moment().startOf('day').toDate();
+    const todayEnd = moment().endOf('day').toDate();
+    
+    console.log('Date range:', { todayStart, todayEnd });
+    
+    const todayRequests = await CollectionRequest.count({
+      where: {
+        created_at: {
+          [Op.between]: [todayStart, todayEnd]
+        }
       }
-    }
+    }).catch(err => {
+      console.error('Error counting today requests:', err);
+      throw err;
+    });
+    
+    console.log('Today requests:', todayRequests);
+    
+    // Get weekly statistics
+    const weekStart = moment().startOf('week').toDate();
+    const weeklyStats = await CollectionRequest.findAll({
+      attributes: [
+        [Sequelize.fn('DATE', Sequelize.col('created_at')), 'date'],
+        [Sequelize.fn('COUNT', Sequelize.col('CollectionRequest.id')), 'count']
+      ],
+      where: {
+        created_at: {
+          [Op.gte]: weekStart
+        }
+      },
+      group: [Sequelize.fn('DATE', Sequelize.col('created_at'))],
+      order: [[Sequelize.fn('DATE', Sequelize.col('created_at')), 'ASC']]
+    }).catch(err => {
+      console.error('Error getting weekly stats:', err);
+      throw err;
+    });
+    
+    console.log('Weekly stats:', JSON.stringify(weeklyStats, null, 2));
+    
+    // Get top categories - FIXED: Specify which table's id to count
+    const topCategories = await RequestItem.findAll({
+      attributes: [
+        'category_id',
+        [Sequelize.fn('COUNT', Sequelize.col('RequestItem.id')), 'count']
+      ],
+      include: [{
+        model: Category,
+        attributes: ['id', 'name'] // Explicitly include id
+      }],
+      group: ['RequestItem.category_id'], // Specify table for group by
+      order: [[Sequelize.fn('COUNT', Sequelize.col('RequestItem.id')), 'DESC']],
+      limit: 5
+    }).catch(err => {
+      console.error('Error getting top categories:', err);
+      throw err;
+    });
+    
+    console.log('Top categories:', JSON.stringify(topCategories, null, 2));
+    
+    res.json({
+      success: true,
+      data: {
+        status_counts: counts,
+        today_requests: todayRequests,
+        weekly_stats: weeklyStats,
+        top_categories: topCategories
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    console.error('Full error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while fetching dashboard statistics',
+      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: error.stack,
+        details: error
+      })
+    });
+  }
+}
     }
   
   // Helper function to calculate distance between two coordinates (Haversine formula)
