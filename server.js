@@ -19,7 +19,6 @@ const sequelize = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-
 // Global unhandled error handling
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -43,7 +42,7 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+// app.set('trust proxy', true,1);
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

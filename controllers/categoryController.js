@@ -2,6 +2,7 @@ const { Category } = require('../models');
 const { processUploadedFile } = require('../middlewares/upload');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 class CategoryController {
   // Create category with icon upload
@@ -178,7 +179,7 @@ static async getAllCategories(req, res) {
     });
     
     // Convert relative paths to absolute URLs
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = process.env.APP_URL;
     const categoriesWithFullUrls = categories.map(category => {
       const categoryData = category.toJSON();
       if (categoryData.icon) {
