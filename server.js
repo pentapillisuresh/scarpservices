@@ -19,7 +19,8 @@ const sequelize = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-// Global unhandled error handling
+
+// Global unhandled error handling 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
@@ -27,6 +28,8 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
+// Trust first proxy (Nginx / Load balancer)
+app.set('trust proxy', 1);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -37,15 +40,33 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Middleware
-app.use(helmet());
+// app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.set('trust proxy', true,1);
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve static files
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(
+  '/uploads',
+  cors({
+    origin: '*',
+    methods: ['GET'],
+  }),
+  express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res) => {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  })
+);
 // API base path
 const BASE = '/api/v1';
 
