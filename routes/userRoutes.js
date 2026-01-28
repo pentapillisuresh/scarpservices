@@ -15,4 +15,8 @@ router.put(
     authorize('user'),
     uploadProfileImage,      // 🔴 THIS LINE WAS MISSING
     UserController.updateProfile
-  );module.exports = router;
+  );
+
+router.put('/:phone', UserController.inactiveProfile);
+
+module.exports = router;

@@ -2,6 +2,7 @@ const { User, CollectionRequest, RequestItem, Category, RequestImage, UserAddres
 const { processUploadedFile } = require('../middlewares/upload');
 const fs = require('fs');
 const path = require('path');
+const { where } = require('../config/database');
 
 class UserController {
   // Update profile with image
@@ -70,6 +71,35 @@ class UserController {
     }
   }
 
+  static async inactiveProfile(req, res) {
+    try {
+      const { phone } = req.params;
+  
+      const [updatedCount] = await User.update(
+        { is_active: false, is_verified: false },
+        { where: { phone } }
+      );
+  
+      if (updatedCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+  
+      res.json({
+        success: true,
+        message: 'User Profile Deactivated successfully',
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+      });
+    }
+  }
+  
   // Get user profile with full image URLs
   static async getProfile(req, res) {
     try {
